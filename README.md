@@ -108,11 +108,17 @@ price_updates = {"12345": ("2024-01-02", 102)}  # Example price update for a bon
 portfolio.update_all_prices(price_updates)
 
 # Apply Hedging Strategy
-portfolio, strategy_cost = hedging_strategy(
-    portfolio, 
+metrics, portfolio, next_date = hedging_strategy(
+    portfolio=portfolio, 
+    yield_curve=yield_curve,
     previous_date="2024-01-01", 
     current_date="2024-01-02", 
-    target_duration=5  # Target portfolio duration
+    sheet_data=sheet_data,
+    return_history=return_history,
+    rebalance_strategy=hedging_strategy,
+    strategy_args={"target_duration": 0,
+                   "treasury_cusip": "912810RP5",
+                    "initial_date": "2024-08-14"}
 )
 ```
 
@@ -149,14 +155,35 @@ print(updated_portfolio)
 The yield curve and portfolio durations can be plotted using the `plot_curve_with_durations_and_price_change` function. This allows you to compare changes in yield curves and durations of bonds and swaps over time.
 
 ```python
-yield_curve.plot_curve_with_durations_and_price_change(
-    dates=[previous_date, current_date],
-    portfolio=portfolio,
-    use_nss=True
-)
+# Paths to the yield curve data files for the years 2020 to 2024
+files = [
+    "daily-treasury-rates-2020.csv",
+    "daily-treasury-rates-2021.csv",
+    "daily-treasury-rates-2022.csv",
+    "daily-treasury-rates-2023.csv",
+    "daily-treasury-rates-2024.csv"
+]
+
+# Initialize and load the yield curve with multiple files
+yield_curve = YieldCurve()
+yield_curve.load_multiple_files(files)
+
+# Plot a specific date or all dates in the range
+yield_curve.plot_curve("2023-08-31")
+
+# Plot for a date range
+yield_curve.plot_all_curves(start_date="2024-08-14", end_date="2024-12-31", interval=10)
+
+# Loading Nelson-Siegel-Svensson parameters
+yield_curve.load_nss_parameters("feds200628.csv")
+
+# Plot the yield curve for a specific date
+yield_curve.plot_curve("2023-08-31")
+
+# Plot multiple yield curves for different dates
+dates = ["2024-08-14", "2024-09-18", "2024-10-31"]
+yield_curve.plot_multiple_nss_curves(dates)
 ```
-
-
 
 ### Key Outputs
 
@@ -180,7 +207,7 @@ print("Portfolio Market Value:", metrics["portfolio_market_value"])
 print("Portfolio Duration:", metrics["portfolio_duration"])
 print("Unrealized P&L:", metrics["unrealized_pl"])
 print("Sharpe Ratio:", metrics["sharpe_ratio"])
-
+```
 
 ### Data Visualization
 
@@ -190,12 +217,11 @@ The updated return history and portfolio metrics can be visualized to analyze po
 To visualize portfolio returns, you can use the `plot_returns` function. This will display a time series plot of portfolio returns.
 
 ```python
-from portfolio_management import plot_returns
+from utilities import plot_return_history
 
 # Visualize returns over time
 plot_return_history(return_history=return_history)
 ```
-
 
 ## Data Sources
 
